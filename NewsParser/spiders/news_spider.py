@@ -4,28 +4,14 @@ from scrapy.spiders import CrawlSpider, Rule
 import datetime
 import sqlite3
 import json
+import sys
+import os
 
-class Source:
-    def __init__(self, id: int, name: str, url: str, config: dict):
-        self.id = id
-        self.name = name
-        self.url = url
-        self.config = config
+# Добавляем путь к директории выше в список путей поиска модулей
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-        # Извлечение данных из config
-        self.rule = config.get("rule")
-        self.next_page_rule = config.get("next_page_rule")
-        self.title = config.get("title")
-        self.content = config.get("content")
-        self.date = config.get("date")
-
-    def __repr__(self):
-        return (
-            f"Source(id={self.id}, name='{self.name}', url='{self.url}', "
-            f"rule='{self.rule}', next_page_rule='{self.next_page_rule}', "
-            f"title_rule='{self.title_rule}', content_rule='{self.content_rule}', "
-            f"date_rule='{self.date_rule}')"
-        )
+# После этого можно импортировать модуль source.py
+from models.source import Source
 
 dbConnection = sqlite3.connect(r'../SourceParserDB.db')
 
@@ -66,3 +52,5 @@ class NewsSpiderSpider(CrawlSpider):
         item["date"] = response.xpath("//div[contains(@class, 'layout-content-type-page__wrapper-block')]/p/time[contains(@class, 'datetime datetime--publication')]/@datetime").get()
         item["created_at"] = datetime.datetime.now()
         return item
+
+# scrapy crawl news_spider -o output.json -a count=5
