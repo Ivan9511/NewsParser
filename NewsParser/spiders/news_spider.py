@@ -29,28 +29,33 @@ def GetSources():
 
     return sources
 
-sources = GetSources()
-
-for source in sources:
-    print(source)
-
 class NewsSpiderSpider(CrawlSpider):
     name = "news_spider"
-    allowed_domains = ["nur.kz"]
-    start_urls = ["http://www.nur.kz/latest"]
+    
+    sources = GetSources()
+    allowed_domains = [source.name for source in sources]
+    start_urls = [source.url for source in sources]
 
-    rules = (
-        Rule(LinkExtractor(restrict_xpaths="//article/a[@class='article-preview-category__content']"), callback="parse_item", follow=True),        
-        )
+    rules = []
+    for source in sources:
+        if source.next_page_rule:
+            rules.extend([
+                Rule(LinkExtractor(restrict_xpaths=source.rule), callback='parse_item', follow=True, cb_kwargs={'source': source}),
+                Rule(LinkExtractor(restrict_xpaths=source.next_page_rule), follow=True)
+            ])
+        else:
+            rules.extend([
+                Rule(LinkExtractor(restrict_xpaths=source.rule), callback='parse_item', follow=True, cb_kwargs={'source': source})
+            ])
+    rules = tuple(rules)
 
-    def parse_item(self, response):
+    def parse_item(self, response, source):
         item = {}
-        item["source_id"] = 1
+        item["source_id"] = source.id
         item["link"] = response.url
-        item["title"] = response.xpath("//article/h1[contains(@class, 'main-headline')]/text()").get()
-        item["content"] = ''.join(response.xpath("//div[contains(@class, 'formatted-body__content--wrapper')]/p//text()").extract())
-        item["date"] = response.xpath("//div[contains(@class, 'layout-content-type-page__wrapper-block')]/p/time[contains(@class, 'datetime datetime--publication')]/@datetime").get()
+        item["title"] = response.xpath(source.config["title"]).get()
+        item["content"] = ''.join(response.xpath(source.config["content"]).extract())
+        item["date"] = response.xpath(source.config["date"]).get()
         item["created_at"] = datetime.datetime.now()
         return item
-
 # scrapy crawl news_spider -o output.json -a count=5
