@@ -11,7 +11,7 @@ BOT_NAME = "NewsParser"
 
 SPIDER_MODULES = ["NewsParser.spiders"]
 NEWSPIDER_MODULE = "NewsParser.spiders"
-
+CLOSESPIDER_ITEMCOUNT = 30
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "NewsParser (+http://www.yourdomain.com)"

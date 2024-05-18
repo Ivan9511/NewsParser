@@ -53,9 +53,29 @@ class NewsSpiderSpider(CrawlSpider):
         item = {}
         item["source_id"] = source.id
         item["link"] = response.url
-        item["title"] = response.xpath(source.config["title"]).get()
-        item["content"] = ''.join(response.xpath(source.config["content"]).extract())
+        title_raw = response.xpath(source.config["title"]).get()
+        item["title"] = title_raw.strip() if title_raw else None
+        content_raw = response.xpath(source.config["content"]).extract()
+        item["content"] = ''.join(content_raw).strip()      
         item["date"] = response.xpath(source.config["date"]).get()
         item["created_at"] = datetime.datetime.now()
+        
+        self.save_to_db(item)
         return item
-# scrapy crawl news_spider -o output.json -a count=5
+    
+    def save_to_db(self, item):
+        with dbConnection:
+            dbConnection.execute("""
+            INSERT INTO items (source_id, link, title, content, date, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                item["source_id"], 
+                item["link"], 
+                item["title"], 
+                item["content"], 
+                item["date"], 
+                item["created_at"]
+            ))
+            
+# CLOSESPIDER_ITEMCOUNT = 30 в settings.py
+# Запуск в директории ...\NewsParser\NewsParser> scrapy crawl news_spider
